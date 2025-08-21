@@ -33,9 +33,10 @@ type CreatePostFormData = z.infer<typeof createPostSchema>;
 interface CreatePostModalProps {
   open: boolean;
   onClose: () => void;
+  defaultStatus?: 'NORMAL' | 'LOST' | 'FOUND';
 }
 
-export default function CreatePostModal({ open, onClose }: CreatePostModalProps) {
+export default function CreatePostModal({ open, onClose, defaultStatus = 'NORMAL' }: CreatePostModalProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -55,9 +56,19 @@ export default function CreatePostModal({ open, onClose }: CreatePostModalProps)
   const form = useForm<CreatePostFormData>({
     resolver: zodResolver(createPostSchema),
     defaultValues: {
-      status: "NORMAL",
+      status: defaultStatus,
       confirmAnimal: false,
     },
+  });
+
+  // Reset form when modal opens with new default status
+  useState(() => {
+    if (open) {
+      form.reset({
+        status: defaultStatus,
+        confirmAnimal: false,
+      });
+    }
   });
 
   const createPostMutation = useMutation({

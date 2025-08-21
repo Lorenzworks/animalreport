@@ -19,6 +19,7 @@ export default function Profile() {
   const queryClient = useQueryClient();
   const [showAnimalForm, setShowAnimalForm] = useState(false);
   const [editingAnimal, setEditingAnimal] = useState<Animal | null>(null);
+  const [showEditProfile, setShowEditProfile] = useState(false);
 
   const { data: animals = [], isLoading: animalsLoading } = useQuery<Animal[]>({
     queryKey: ["/api/me/animals"],
@@ -89,7 +90,7 @@ export default function Profile() {
               <div className="flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:space-x-6">
                 <div className="relative">
                   <Avatar className="w-24 h-24">
-                    <AvatarImage src={user?.avatarUrl} alt={user?.displayName} />
+                    <AvatarImage src={user?.avatarUrl || undefined} alt={user?.displayName || undefined} />
                     <AvatarFallback className="text-2xl">
                       {user?.displayName?.charAt(0).toUpperCase()}
                     </AvatarFallback>
@@ -250,6 +251,25 @@ export default function Profile() {
             onSuccess={handleCloseForm}
             onCancel={handleCloseForm}
           />
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Profile Modal */}
+      <Dialog open={showEditProfile} onOpenChange={setShowEditProfile}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit Profile</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="text-center text-gray-600">
+              <Settings className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+              <p>Profile editing feature is coming soon!</p>
+              <p className="text-sm mt-2">You'll be able to update your name, bio, avatar, and location preferences.</p>
+            </div>
+            <div className="flex justify-end">
+              <Button onClick={() => setShowEditProfile(false)}>Close</Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

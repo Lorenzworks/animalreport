@@ -12,6 +12,7 @@ import { MapPin, TrendingUp, Lightbulb, Heart } from "lucide-react";
 
 export default function HomePage() {
   const [showCreatePost, setShowCreatePost] = useState(false);
+  const [postType, setPostType] = useState<'NORMAL' | 'LOST' | 'FOUND'>('NORMAL');
   const [offset, setOffset] = useState(0);
 
   const { data: posts = [], isLoading } = useQuery<PostWithDetails[]>({
@@ -40,7 +41,20 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen">
-      <Navbar onCreatePost={() => setShowCreatePost(true)} />
+      <Navbar 
+        onCreatePost={() => {
+          setPostType('NORMAL');
+          setShowCreatePost(true);
+        }}
+        onCreateLostPost={() => {
+          setPostType('LOST');
+          setShowCreatePost(true);
+        }}
+        onCreateFoundPost={() => {
+          setPostType('FOUND');
+          setShowCreatePost(true);
+        }}
+      />
       
       <div className="pt-20 min-h-screen">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -210,7 +224,8 @@ export default function HomePage() {
 
       <CreatePostModal 
         open={showCreatePost} 
-        onClose={() => setShowCreatePost(false)} 
+        onClose={() => setShowCreatePost(false)}
+        defaultStatus={postType}
       />
     </div>
   );

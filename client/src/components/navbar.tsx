@@ -9,9 +9,11 @@ import { Heart, Search, Home, MapPin, Plus, Bell, User, LogOut, Settings } from 
 
 interface NavbarProps {
   onCreatePost?: () => void;
+  onCreateLostPost?: () => void;
+  onCreateFoundPost?: () => void;
 }
 
-export default function Navbar({ onCreatePost }: NavbarProps) {
+export default function Navbar({ onCreatePost, onCreateLostPost, onCreateFoundPost }: NavbarProps) {
   const { user, logoutMutation } = useAuth();
   const [, navigate] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
@@ -57,7 +59,7 @@ export default function Navbar({ onCreatePost }: NavbarProps) {
           </div>
 
           {/* Navigation Menu */}
-          <div className="flex items-center space-x-6">
+          <div className="flex items-center space-x-8">
             <Link href="/">
               <a className="text-gray-700 hover:text-brand-green transition-colors">
                 <Home className="w-5 h-5" />
@@ -70,16 +72,44 @@ export default function Navbar({ onCreatePost }: NavbarProps) {
               </a>
             </Link>
             
-            {onCreatePost && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={onCreatePost}
-                className="text-gray-700 hover:text-brand-green transition-colors"
-              >
-                <Plus className="w-5 h-5" />
-              </Button>
-            )}
+            {/* Quick Actions */}
+            <div className="flex items-center space-x-4">
+              {onCreatePost && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={onCreatePost}
+                  className="text-gray-700 hover:text-brand-green transition-colors"
+                  title="Create Normal Post"
+                >
+                  <Plus className="w-5 h-5" />
+                </Button>
+              )}
+              
+              {onCreateLostPost && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onCreateLostPost}
+                  className="text-gray-700 hover:text-brand-yellow transition-colors px-3 py-1 text-xs font-medium"
+                  title="Report Lost Pet"
+                >
+                  Lost Pet
+                </Button>
+              )}
+              
+              {onCreateFoundPost && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onCreateFoundPost}
+                  className="text-gray-700 hover:text-brand-azure transition-colors px-3 py-1 text-xs font-medium"
+                  title="Report Found Pet"
+                >
+                  Found Pet
+                </Button>
+              )}
+            </div>
             
             <Button
               variant="ghost"
@@ -94,7 +124,7 @@ export default function Navbar({ onCreatePost }: NavbarProps) {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src={user?.avatarUrl} alt={user?.displayName} />
+                    <AvatarImage src={user?.avatarUrl || undefined} alt={user?.displayName || undefined} />
                     <AvatarFallback>
                       {user?.displayName?.charAt(0).toUpperCase()}
                     </AvatarFallback>
@@ -109,7 +139,7 @@ export default function Navbar({ onCreatePost }: NavbarProps) {
                     )}
                     {user?.email && (
                       <p className="w-[200px] truncate text-sm text-muted-foreground">
-                        {user.email}
+                        {user.email || ''}
                       </p>
                     )}
                   </div>
