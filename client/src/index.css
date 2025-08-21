@@ -1,0 +1,120 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Brand Colors */
+  --brand-green: hsl(120, 48%, 33%);
+  --brand-green-600: hsl(120, 61%, 23%);
+  --brand-yellow: hsl(45, 85%, 58%);
+  --brand-azure: hsl(197, 89%, 64%);
+  
+  /* Background Gradient */
+  --bg-gradient: linear-gradient(135deg, hsl(120, 25%, 96%), hsl(205, 50%, 95%) 60%);
+  
+  /* Base Theme */
+  --background: hsl(0, 0%, 100%);
+  --foreground: hsl(210, 25%, 8%);
+  --card: hsl(0, 0%, 100%);
+  --card-foreground: hsl(210, 25%, 8%);
+  --popover: hsl(0, 0%, 100%);
+  --popover-foreground: hsl(210, 25%, 8%);
+  --primary: hsl(120, 48%, 33%);
+  --primary-foreground: hsl(0, 0%, 100%);
+  --secondary: hsl(210, 25%, 96%);
+  --secondary-foreground: hsl(210, 25%, 8%);
+  --muted: hsl(240, 2%, 90%);
+  --muted-foreground: hsl(210, 25%, 8%);
+  --accent: hsl(120, 25%, 96%);
+  --accent-foreground: hsl(120, 48%, 33%);
+  --destructive: hsl(356, 91%, 54%);
+  --destructive-foreground: hsl(0, 0%, 100%);
+  --border: hsl(201, 30%, 91%);
+  --input: hsl(200, 23%, 97%);
+  --ring: hsl(120, 48%, 33%);
+  --radius: 1rem;
+  --font-sans: 'Inter', system-ui, sans-serif;
+}
+
+.dark {
+  --background: hsl(0, 0%, 4%);
+  --foreground: hsl(200, 7%, 91%);
+  --card: hsl(228, 10%, 10%);
+  --card-foreground: hsl(0, 0%, 85%);
+  --popover: hsl(0, 0%, 4%);
+  --popover-foreground: hsl(200, 7%, 91%);
+  --primary: hsl(120, 48%, 45%);
+  --primary-foreground: hsl(0, 0%, 100%);
+  --secondary: hsl(195, 15%, 95%);
+  --secondary-foreground: hsl(210, 25%, 8%);
+  --muted: hsl(0, 0%, 9%);
+  --muted-foreground: hsl(210, 3%, 46%);
+  --accent: hsl(205, 70%, 8%);
+  --accent-foreground: hsl(120, 48%, 45%);
+  --destructive: hsl(356, 91%, 54%);
+  --destructive-foreground: hsl(0, 0%, 100%);
+  --border: hsl(210, 5%, 15%);
+  --input: hsl(208, 28%, 18%);
+  --ring: hsl(120, 48%, 45%);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased;
+    background: var(--bg-gradient);
+    color: hsl(var(--foreground));
+    min-height: 100vh;
+  }
+}
+
+@layer components {
+  .post-card {
+    transition: transform 0.2s ease-in-out;
+  }
+  
+  .post-card:hover {
+    transform: translateY(-2px);
+  }
+  
+  .like-btn.liked {
+    color: #ef4444;
+  }
+  
+  .follow-btn.following {
+    background-color: var(--brand-green-600);
+  }
+
+  .brand-button-primary {
+    @apply bg-[--brand-green] hover:bg-[--brand-green-600] text-white transition-colors duration-200;
+  }
+
+  .brand-button-yellow {
+    @apply bg-[--brand-yellow] hover:bg-yellow-400 text-gray-800 transition-colors duration-200;
+  }
+
+  .brand-button-azure {
+    @apply bg-[--brand-azure] hover:bg-blue-400 text-white transition-colors duration-200;
+  }
+
+  .brand-badge-lost {
+    @apply bg-[--brand-yellow] text-gray-800 text-xs px-2 py-1 rounded-full font-medium;
+  }
+
+  .brand-badge-found {
+    @apply bg-[--brand-azure] text-white text-xs px-2 py-1 rounded-full font-medium;
+  }
+
+  .brand-badge-vet {
+    @apply bg-[--brand-azure] text-white text-xs px-2 py-1 rounded-full;
+  }
+
+  .focus-ring {
+    @apply focus:outline-none focus:ring-2 focus:ring-[--brand-green] focus:ring-offset-2;
+  }
+}
