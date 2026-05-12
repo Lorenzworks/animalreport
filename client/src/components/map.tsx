@@ -1,10 +1,10 @@
 import { useEffect, useRef } from 'react';
-import { PostWithDetails } from '@shared/schema';
+import { Post } from '@shared/schema';
 
 interface MapProps {
-  posts: PostWithDetails[];
+  posts: Post[];
   height?: string;
-  onMarkerClick?: (post: PostWithDetails) => void;
+  onMarkerClick?: (post: Post) => void;
 }
 
 export default function Map({ posts, height = "400px", onMarkerClick }: MapProps) {
@@ -63,32 +63,34 @@ export default function Map({ posts, height = "400px", onMarkerClick }: MapProps
           className: 'custom-div-icon'
         });
 
-        // Add markers for posts with location
+           // Add markers for posts with location
         const newMarkers: any[] = [];
         const bounds = L.latLngBounds([]);
 
         posts.forEach((post) => {
-          if (post.lat && post.lng) {
+          if (post.lat != null && post.lng != null) {   // ← cambiato da && a != null (più sicuro)
             const icon = post.status === 'LOST' ? lostIcon : foundIcon;
-            
+            const description = post.details 
+              ? post.details.substring(0, 100) + (post.details.length > 100 ? '...' : '') 
+              : 'No details provided';
+
             const marker = L.marker([post.lat, post.lng], { icon })
               .bindPopup(`
-                <div style="max-width: 200px;">
+                <div style="max-width: 220px; font-family: system-ui;">
                   <div style="display: flex; align-items: center; margin-bottom: 8px;">
-                    <img src="${post.animal.avatarUrl || post.mediaUrl}" 
-                         alt="${post.animal.name}" 
-                         style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; margin-right: 8px;">
+                    <img src="${post.mediaUrl}" 
+                         alt="${post.animalName}"
+                         style="width: 45px; height: 45px; border-radius: 50%; object-fit: cover; margin-right: 10px;">
                     <div>
-                      <strong>${post.animal.name}</strong>
-                      <div style="font-size: 12px; color: #666;">
-                        ${post.status === 'LOST' ? '🚨 LOST' : '🏠 FOUND'}
-                      </div>
+                      <strong>${post.animalName}</strong><br>
+                      <span style="font-size: 12px; color: #666;">${post.species}</span>
                     </div>
                   </div>
-                  <p style="margin: 0; font-size: 14px; line-height: 1.4;">
-                    ${post.caption ? post.caption.substring(0, 100) + (post.caption.length > 100 ? '...' : '') : ''}
+                  <p style="margin: 0 0 8px; font-size: 13px; line-height: 1.4;">
+                    ${description}
                   </p>
-                  ${post.contact ? `<div style="margin-top: 8px; font-size: 12px; color: #666;">Contact: ${post.contact}</div>` : ''}
+                  ${post.contact ? `<div style="font-size: 12px; color: #666;">📞 ${post.contact}</div>` : ''}
+                  ${post.location ? `<div style="font-size: 12px; color: #666; margin-top: 4px;">📍 ${post.location}</div>` : ''}
                 </div>
               `)
               .addTo(map);
@@ -101,8 +103,6 @@ export default function Map({ posts, height = "400px", onMarkerClick }: MapProps
             newMarkers.push(marker);
           }
         });
-
-        markersRef.current = newMarkers;
 
         // Fit map to show all markers
         if (newMarkers.length > 0) {

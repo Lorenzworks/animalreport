@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogPortal, DialogOverlay } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,14 +11,14 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
 import { Upload, X, Camera } from "lucide-react";
 
 const createPostSchema = z.object({
-  animalName: z.string().min(1, "Please enter a pet name"),
-  species: z.string().min(1, "Please enter species"),
-  details: z.string().optional(),
-  status: z.enum(["NORMAL", "LOST", "FOUND"]).default("NORMAL"),
+  animalName: z.string().min(1, "Pet name is required"),
+  species: z.string().min(1, "Species is required"),  // ← NUOVO CAMPO
+  details: z.string().min(10, "Please provide more details (at least 10 characters)"),
+  location: z.string().min(3, "Please enter a location"),
+  status: z.enum(["LOST", "FOUND"]),
   contact: z.string().optional(),
   lat: z.number().optional(),
   lng: z.number().optional(),
@@ -32,10 +32,10 @@ type CreatePostFormData = z.infer<typeof createPostSchema>;
 interface CreatePostModalProps {
   open: boolean;
   onClose: () => void;
-  defaultStatus?: 'NORMAL' | 'LOST' | 'FOUND';
+  defaultStatus?: 'LOST' | 'FOUND';
 }
 
-export default function CreatePostModal({ open, onClose, defaultStatus = 'NORMAL' }: CreatePostModalProps) {
+export default function CreatePostModal({ open, onClose, defaultStatus = 'LOST' }: CreatePostModalProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -44,34 +44,56 @@ export default function CreatePostModal({ open, onClose, defaultStatus = 'NORMAL
   const form = useForm<CreatePostFormData>({
     resolver: zodResolver(createPostSchema),
     defaultValues: {
-      animalName: "",
-      species: "",
       status: defaultStatus,
       confirmAnimal: false,
     },
   });
 
-  // Reset form when modal opens with new default status
-  useEffect(() => {
-    if (open) {
-      form.reset({
-        status: defaultStatus,
-        confirmAnimal: false,
-      });
-    }
-  }, [open, defaultStatus, form]);
-
   const createPostMutation = useMutation({
     mutationFn: async (data: CreatePostFormData & { media: File }) => {
+      let lat = data.lat;
+      let lng = data.lng;
+
+      // Geocoding: converti l'indirizzo in coordinate
+      if (data.location && (!lat || !lng)) {
+        try {
+          console.log(`🔍 Geocoding address: ${data.location}`);
+          
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(data.location)}&limit=1&addressdetails=1`,
+            {
+              headers: {
+                'User-Agent': 'Mypet-LostAndFound-App/1.0'
+              }
+            }
+          );
+
+          if (!response.ok) throw new Error('Geocoding request failed');
+
+          const geoData = await response.json();
+
+          if (geoData && geoData.length > 0) {
+            lat = parseFloat(geoData[0].lat);
+            lng = parseFloat(geoData[0].lon);
+            console.log(`✅ Geocoded "${data.location}" → ${lat}, ${lng}`);
+          } else {
+            console.warn(`⚠️ No geocoding results for: ${data.location}`);
+          }
+        } catch (error) {
+          console.warn("Geocoding failed:", error);
+        }
+      }
+
       const formData = new FormData();
       formData.append("media", data.media);
       formData.append("animalName", data.animalName);
       formData.append("species", data.species);
+      formData.append("details", data.details || "");
       formData.append("status", data.status);
-      if (data.details) formData.append("details", data.details);
       if (data.contact) formData.append("contact", data.contact);
-      if (data.lat) formData.append("lat", data.lat.toString());
-      if (data.lng) formData.append("lng", data.lng.toString());
+      if (data.location) formData.append("location", data.location);   // ← importante
+      if (lat !== undefined && lat !== null) formData.append("lat", lat.toString());
+      if (lng !== undefined && lng !== null) formData.append("lng", lng.toString());
 
       const res = await fetch("/api/posts", {
         method: "POST",
@@ -86,17 +108,19 @@ export default function CreatePostModal({ open, onClose, defaultStatus = 'NORMAL
 
       return res.json();
     },
+
     onSuccess: () => {
       toast({
         title: "Success!",
-        description: "Your post has been created successfully.",
+        description: "Your lost/found report has been created.",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/feed"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/lost-found"] });
       onClose();
       form.reset();
       setSelectedFile(null);
       setPreviewUrl(null);
     },
+
     onError: (error: Error) => {
       toast({
         title: "Error",
@@ -136,24 +160,25 @@ export default function CreatePostModal({ open, onClose, defaultStatus = 'NORMAL
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto z-[9999]">
         <DialogHeader>
-          <DialogTitle>Create New Post</DialogTitle>
+          <DialogTitle>Report Lost or Found Pet</DialogTitle>
         </DialogHeader>
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {/* Pet Info */}
+
+            {/* Nome animale */}
             <FormField
               control={form.control}
               name="animalName"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Pet Name</FormLabel>
+                  <FormLabel>Pet's Name</FormLabel>
                   <FormControl>
                     <Input
                       {...field}
-                      placeholder="Enter your pet's name"
+                      placeholder="e.g. Max, Luna, Whiskers..."
                     />
                   </FormControl>
                   <FormMessage />
@@ -161,6 +186,7 @@ export default function CreatePostModal({ open, onClose, defaultStatus = 'NORMAL
               )}
             />
 
+            {/* Specie animale - NUOVO CAMPO */}
             <FormField
               control={form.control}
               name="species"
@@ -170,7 +196,7 @@ export default function CreatePostModal({ open, onClose, defaultStatus = 'NORMAL
                   <FormControl>
                     <Input
                       {...field}
-                      placeholder="Enter species (e.g. dog, cat)"
+                      placeholder="e.g. Dog, Cat, Parrot, Rabbit, Horse..."
                     />
                   </FormControl>
                   <FormMessage />
@@ -178,9 +204,9 @@ export default function CreatePostModal({ open, onClose, defaultStatus = 'NORMAL
               )}
             />
 
-            {/* Media Upload */}
+            {/* Upload media */}
             <div>
-              <Label>Photo/Video</Label>
+              <Label>Photo / Video</Label>
               <div className="mt-2">
                 {previewUrl ? (
                   <div className="relative">
@@ -222,19 +248,36 @@ export default function CreatePostModal({ open, onClose, defaultStatus = 'NORMAL
                 )}
               </div>
             </div>
+                        {/* Location */}
+            <FormField
+              control={form.control}
+              name="location"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Location</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      placeholder="es. Central Park, New York o Via Roma 45, Milano"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-            {/* Details */}
+            {/* Dettagli + reward */}
             <FormField
               control={form.control}
               name="details"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>details</FormLabel>
+                  <FormLabel>Further Details and Reward</FormLabel>
                   <FormControl>
                     <Textarea
                       {...field}
-                      rows={3}
-                      placeholder="Tell us about your pet's day..."
+                      rows={4}
+                      placeholder="Further details and reward..."
                       className="focus-ring"
                     />
                   </FormControl>
@@ -243,23 +286,15 @@ export default function CreatePostModal({ open, onClose, defaultStatus = 'NORMAL
               )}
             />
 
-            {/* Post Type */}
+            {/* Tipo report */}
             <FormField
               control={form.control}
               name="status"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Post Type</FormLabel>
+                  <FormLabel>Report Type</FormLabel>
                   <FormControl>
-                    <div className="grid grid-cols-3 gap-2">
-                      <Button
-                        type="button"
-                        variant={field.value === "NORMAL" ? "default" : "outline"}
-                        onClick={() => field.onChange("NORMAL")}
-                        className="w-full"
-                      >
-                        Normal
-                      </Button>
+                    <div className="grid grid-cols-2 gap-3">
                       <Button
                         type="button"
                         variant={field.value === "LOST" ? "default" : "outline"}
@@ -283,28 +318,26 @@ export default function CreatePostModal({ open, onClose, defaultStatus = 'NORMAL
               )}
             />
 
-            {/* Contact Info for Lost/Found */}
-            {(form.watch("status") === "LOST" || form.watch("status") === "FOUND") && (
-              <FormField
-                control={form.control}
-                name="contact"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Contact Information</FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        placeholder="Phone number or email for contact"
-                        className="focus-ring"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
+            {/* Contact */}
+            <FormField
+              control={form.control}
+              name="contact"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Contact Information (phone/email)</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      placeholder="How people can contact you about this pet"
+                      className="focus-ring"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-            {/* Animal Content Confirmation */}
+            {/* Conferma */}
             <FormField
               control={form.control}
               name="confirmAnimal"
@@ -326,7 +359,7 @@ export default function CreatePostModal({ open, onClose, defaultStatus = 'NORMAL
               )}
             />
 
-            {/* Submit Button */}
+            {/* Submit */}
             <div className="flex space-x-3">
               <Button
                 type="button"
@@ -341,7 +374,7 @@ export default function CreatePostModal({ open, onClose, defaultStatus = 'NORMAL
                 className="flex-1 brand-button-primary"
                 disabled={createPostMutation.isPending}
               >
-                {createPostMutation.isPending ? "Sharing..." : "Share Post"}
+                {createPostMutation.isPending ? "Submitting..." : "Submit Report"}
               </Button>
             </div>
           </form>

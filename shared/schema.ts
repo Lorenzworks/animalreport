@@ -45,15 +45,20 @@ export const animals = pgTable("animals", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Posts table
+// Posts table - Versione aggiornata per Lost & Found
 export const posts = pgTable("posts", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   authorId: varchar("author_id").notNull().references(() => users.id),
-  animalId: varchar("animal_id").notNull().references(() => animals.id),
-  caption: text("caption"),
+  
+  // Nuovi campi invece di animalId
+  animalName: text("animal_name").notNull(),
+  species: text("species").notNull(),
+  
+  details: text("details"),                    // invece di caption
+  location: text("location"),
   mediaUrl: text("media_url").notNull(),
   mediaType: text("media_type").notNull(),
-  status: text("status").notNull().default("NORMAL"),
+  status: text("status").notNull().default("LOST"),
   lat: real("lat"),
   lng: real("lng"),
   contact: text("contact"),
@@ -98,13 +103,14 @@ export const reports = pgTable("reports", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-// Insert schemas
-export const insertUserSchema = createInsertSchema(users).omit({
+export const insertPostSchema = createInsertSchema(posts).omit({
   id: true,
   createdAt: true,
-  updatedAt: true,
 }).extend({
-  passwordHash: z.string(),
+  animalName: z.string().min(1, "Pet name is required"),
+  species: z.string().min(1, "Species is required"),
+  details: z.string().optional(),
+  location: z.string().optional(),
 });
 
 export const insertAnimalSchema = createInsertSchema(animals).omit({
@@ -113,10 +119,6 @@ export const insertAnimalSchema = createInsertSchema(animals).omit({
   updatedAt: true,
 });
 
-export const insertPostSchema = createInsertSchema(posts).omit({
-  id: true,
-  createdAt: true,
-});
 
 export const insertCommentSchema = createInsertSchema(comments).omit({
   id: true,
@@ -136,6 +138,14 @@ export const insertFollowSchema = createInsertSchema(follows).omit({
 export const insertReportSchema = createInsertSchema(reports).omit({
   id: true,
   createdAt: true,
+});
+
+export const insertUserSchema = createInsertSchema(users).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  passwordHash: z.string(),
 });
 
 // Types
@@ -163,12 +173,13 @@ export type InsertReport = z.infer<typeof insertReportSchema>;
 // Extended types for API responses
 export type PostWithDetails = Post & {
   author: User;
-  animal: Animal;
+  animal: Animal;           // mantiene l'animale completo
   likes: Like[];
   comments: (Comment & { author: User })[];
   likesCount: number;
   commentsCount: number;
   isLiked: boolean;
+  location: string | null;
 };
 
 export type AnimalWithStats = Animal & {

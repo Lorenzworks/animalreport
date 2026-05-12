@@ -35,15 +35,12 @@ export default function Navbar({ onCreatePost, onCreateLostPost, onCreateFoundPo
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <Link href="/">
-            <a className="flex items-center">
-              <h1 className="text-2xl font-bold text-brand-green">
-                <Heart className="inline-block w-6 h-6 mr-2" />
-                Mypet
-              </h1>
-            </a>
-          </Link>
-
+        <Link href="/" className="flex items-center">
+  <h1 className="text-2xl font-bold text-brand-green">
+    <Heart className="inline-block w-6 h-6 mr-2" />
+    Mypet
+  </h1>
+</Link>
           {/* Search Bar */}
           <div className="flex-1 max-w-lg mx-8">
             <form onSubmit={handleSearch} className="relative">
@@ -153,10 +150,10 @@ export default function Navbar({ onCreatePost, onCreateLostPost, onCreateFoundPo
                     </a>
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Settings className="mr-2 h-4 w-4" />
-                  <span>Settings</span>
-                </DropdownMenuItem>
+               <DropdownMenuItem onClick={() => navigate("/settings")}>
+  <Settings className="mr-2 h-4 w-4" />
+  <span>Settings</span>
+</DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout}>
                   <LogOut className="mr-2 h-4 w-4" />

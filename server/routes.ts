@@ -100,6 +100,9 @@ export function registerRoutes(app: Express): Server {
   // Posts routes
   app.post('/api/posts', requireAuth, upload.single('media'), async (req, res, next) => {
     try {
+      console.log("📥 POST /api/posts - body ricevuto:", req.body);
+      console.log("📥 POST /api/posts - lat/lng ricevuti:", req.body.lat, req.body.lng);
+
       if (!req.file) {
         return res.status(400).json({ message: 'Media file is required' });
       }
@@ -108,22 +111,30 @@ export function registerRoutes(app: Express): Server {
       const mediaType = req.file.mimetype.startsWith('video/') ? 'video' : 'image';
 
       const data = insertPostSchema.parse({
-        ...req.body,
         authorId: req.user!.id,
+        animalName: req.body.animalName,
+        species: req.body.species,
+        details: req.body.details || "",
+        contact: req.body.contact || null,
+        location: req.body.location || null,
+        lat: req.body.lat ? parseFloat(req.body.lat) : null,
+        lng: req.body.lng ? parseFloat(req.body.lng) : null,
         mediaUrl,
         mediaType,
-        lat: req.body.lat ? parseFloat(req.body.lat) : undefined,
-        lng: req.body.lng ? parseFloat(req.body.lng) : undefined,
+        status: req.body.status || "LOST",
       });
 
+      console.log("✅ Parsed data - lat/lng finale:", data.lat, data.lng);
+
       const post = await storage.createPost(data);
-      const postWithDetails = await storage.getPostWithDetails(post.id, req.user!.id);
-      res.status(201).json(postWithDetails);
-    } catch (error) {
+      res.status(201).json(post);
+    } catch (error: any) {
+      console.error("❌ Errore creazione post:", error.message);
       next(error);
     }
   });
 
+    // Get feed posts
   app.get('/api/feed', async (req, res, next) => {
     try {
       const limit = parseInt(req.query.limit as string) || 20;
@@ -135,6 +146,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Get lost & found posts
   app.get('/api/lost-found', async (req, res, next) => {
     try {
       const lat = req.query.lat ? parseFloat(req.query.lat as string) : undefined;
@@ -148,6 +160,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Get single post with details
   app.get('/api/posts/:id', async (req, res, next) => {
     try {
       const post = await storage.getPostWithDetails(req.params.id, req.user?.id);
@@ -160,15 +173,28 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // ==================== DELETE POST ====================
+   // Delete post (only the author can delete it)
   app.delete('/api/posts/:id', requireAuth, async (req, res, next) => {
     try {
-      const post = await storage.getPost(req.params.id);
-      if (!post || post.authorId !== req.user!.id) {
-        return res.status(404).json({ message: 'Post not found' });
+      const postId = req.params.id;
+      
+      // Get the post
+      const post = await storage.getPost(postId);
+
+      if (!post) {
+        return res.status(404).json({ message: "Post not found" });
       }
 
-      await storage.deletePost(req.params.id);
-      res.sendStatus(204);
+      // Security check: only the author can delete their own post
+      if (post.authorId !== req.user!.id) {
+        return res.status(403).json({ message: "You can only delete your own posts" });
+      }
+
+      // Delete the post
+      await storage.deletePost(postId);
+
+      res.json({ message: "Post deleted successfully" });
     } catch (error) {
       next(error);
     }
@@ -203,7 +229,7 @@ export function registerRoutes(app: Express): Server {
       });
 
       const comment = await storage.createComment(data);
-      const comments = await storage.getPostComments(req.params.id);
+      const comments = await storage.getPostComments(req.params.id, req.user!.id);
       res.status(201).json(comments);
     } catch (error) {
       next(error);
@@ -212,7 +238,7 @@ export function registerRoutes(app: Express): Server {
 
   app.get('/api/posts/:id/comments', async (req, res, next) => {
     try {
-      const comments = await storage.getPostComments(req.params.id);
+      const comments = await storage.getPostComments(req.params.id, req.user?.id);
       res.json(comments);
     } catch (error) {
       next(error);

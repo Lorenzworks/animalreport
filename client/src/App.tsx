@@ -12,16 +12,21 @@ import CreatePost from "@/pages/create-post";
 import LostFound from "@/pages/lost-found";
 import Profile from "@/pages/profile";
 import AnimalProfile from "@/pages/animal-profile";
+import SettingsPage from "@/pages/settings-page";
 
 function Router() {
   return (
     <Switch>
-      <Route path="/auth" component={AuthPage} />
-      <ProtectedRoute path="/" component={HomePage} />
+      <Route path="/auth" component={AuthPage} />           {/* ← login resta qui, non toccare */}
+
+      {/* CAMBIA QUESTA: da HomePage a LostFound */}
+      <Route path="/" component={LostFound} />     {/* ← ora la home è Lost & Found */}
+
       <ProtectedRoute path="/create" component={CreatePost} />
-      <ProtectedRoute path="/lost-found" component={LostFound} />
+      <ProtectedRoute path="/lost-found" component={LostFound} />   {/* ← puoi tenere anche questa se vuoi una URL dedicata */}
       <ProtectedRoute path="/me" component={Profile} />
       <ProtectedRoute path="/animal/:id" component={AnimalProfile} />
+      <ProtectedRoute path="/settings" component={SettingsPage} />
       <Route component={NotFound} />
     </Switch>
   );
