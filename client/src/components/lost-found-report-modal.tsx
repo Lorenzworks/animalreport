@@ -9,6 +9,13 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { Upload, X, Camera } from "lucide-react";
@@ -186,19 +193,32 @@ export default function CreatePostModal({ open, onClose, defaultStatus = 'LOST' 
               )}
             />
 
-            {/* Specie animale - NUOVO CAMPO */}
+            {/* Specie animale */}
             <FormField
               control={form.control}
               name="species"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Species</FormLabel>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      placeholder="e.g. Dog, Cat, Parrot, Rabbit, Horse..."
-                    />
-                  </FormControl>
+                  {/* Cambiato defaultValue in value per una migliore sincronizzazione */}
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select the animal species" />
+                      </SelectTrigger>
+                    </FormControl>
+                    {/* Aggiunto z-[10001] per assicurarci che appaia SOPRA la modale */}
+                    <SelectContent className="z-[10001]">
+                      <SelectItem value="Dog">Dog</SelectItem>
+                      <SelectItem value="Cat">Cat</SelectItem>
+                      <SelectItem value="Rabbit">Rabbit</SelectItem>
+                      <SelectItem value="Birds">Birds</SelectItem>
+                      <SelectItem value="Horse">Horse</SelectItem>
+                      <SelectItem value="Cattle">Cattle</SelectItem>
+                      <SelectItem value="Reptiles">Reptiles</SelectItem>
+                      <SelectItem value="Others">Others</SelectItem>
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
